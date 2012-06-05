@@ -220,6 +220,12 @@ void st_wake_up() {
   ENABLE_STEPPER_DRIVER_INTERRUPT();  
 }
 
+void step_wait(){
+    for(int8_t i=0; i < 6; i++){
+    }
+}
+  
+
 FORCE_INLINE unsigned short calc_timer(unsigned short step_rate) {
   unsigned short timer;
   if(step_rate > MAX_STEP_FREQUENCY) step_rate = MAX_STEP_FREQUENCY;
@@ -401,11 +407,11 @@ ISR(TIMER1_COMPA_vect)
     
     
     #ifdef COREXY  //coreXY kinematics defined
-      if((current_block->steps_x > current_block->steps_y)&&((out_bits & (1<<X_AXIS)) == 0)){  //+X is major axis
+      if((current_block->steps_x >= current_block->steps_y)&&((out_bits & (1<<X_AXIS)) == 0)){  //+X is major axis
         WRITE(X_DIR_PIN, !INVERT_X_DIR);
         WRITE(Y_DIR_PIN, !INVERT_Y_DIR);
       }
-      if((current_block->steps_x > current_block->steps_y)&&((out_bits & (1<<X_AXIS)) != 0)){  //-X is major axis
+      if((current_block->steps_x >= current_block->steps_y)&&((out_bits & (1<<X_AXIS)) != 0)){  //-X is major axis
         WRITE(X_DIR_PIN, INVERT_X_DIR);
         WRITE(Y_DIR_PIN, INVERT_Y_DIR);
       }      
@@ -416,7 +422,7 @@ ISR(TIMER1_COMPA_vect)
       if((current_block->steps_y > current_block->steps_x)&&((out_bits & (1<<Y_AXIS)) != 0)){  //-Y is major axis
         WRITE(X_DIR_PIN, INVERT_X_DIR);
         WRITE(Y_DIR_PIN, !INVERT_Y_DIR);
-      }    
+      }  
     #endif //coreXY
     
     
@@ -528,17 +534,25 @@ ISR(TIMER1_COMPA_vect)
           if (((out_bits & (1<<X_AXIS)) == 0)^((out_bits & (1<<Y_AXIS)) == 0)){  //X and Y in different directions
             WRITE(Y_STEP_PIN, HIGH);
             counter_x -= current_block->step_event_count;             
+            WRITE(Y_STEP_PIN, LOW);
+            step_wait();
+            count_position[X_AXIS]+=count_direction[X_AXIS];
+            count_position[Y_AXIS]+=count_direction[Y_AXIS];
+            WRITE(Y_STEP_PIN, HIGH);
             counter_y -= current_block->step_event_count;
             WRITE(Y_STEP_PIN, LOW);
           }
           else{  //X and Y in same direction
             WRITE(X_STEP_PIN, HIGH);
             counter_x -= current_block->step_event_count;             
-            counter_y -= current_block->step_event_count;
-            WRITE(X_STEP_PIN, LOW) ;                     
+            WRITE(X_STEP_PIN, LOW) ;
+            step_wait();
+            count_position[X_AXIS]+=count_direction[X_AXIS];
+            count_position[Y_AXIS]+=count_direction[Y_AXIS];
+            WRITE(X_STEP_PIN, HIGH); 
+            counter_y -= current_block->step_event_count;    
+            WRITE(X_STEP_PIN, LOW);        
           }
-          count_position[X_AXIS]+=count_direction[X_AXIS];
-          count_position[Y_AXIS]+=count_direction[Y_AXIS];
         }
       #endif //corexy
       
