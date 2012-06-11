@@ -1,3 +1,5 @@
+Modified for CoreXY and similar kinematics (www.corexy.com/theory.html)
+
 This version is for supporting Printrboard
 
 WARNING: 
